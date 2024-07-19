@@ -1,7 +1,6 @@
 from django.urls import path
 from . import views
-from .views import command_serializer, get_last_entries, Agrosense_serializer_add_data_sensor1, Agrosense_serializer_add_data_sensor2
-from .views import Send_State
+from .views import command_serializer, get_last_entries, Send_State
 
 urlpatterns = [
   path('', views.index, name='index'),
@@ -18,4 +17,5 @@ urlpatterns = [
   path('Sensor1/', views.Agrosense_serializer_add_data_sensor1, name='Listado_sensor1'),
   path('Sensor2/', views.Agrosense_serializer_add_data_sensor2, name='Listado_sensor2'),
   path('send-state/', Send_State, name='Send_State'),
+  path('save_date/', views.save_date, name='save_date'),
 ]

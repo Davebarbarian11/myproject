@@ -11,7 +11,7 @@
     <link rel="preconnect" href="'https://fonts.googleapis.com">
     <link rel="preconnect" href="'https://fonts.gstatic.com'" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap" rel="stylesheet">
-    
+
     <!-- <link rel="stylesheet" href="assets/css/icons.css"> -->
     <link rel="stylesheet" href="{% static 'assets_dashboard/css/style.css'%}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -20,7 +20,7 @@
     <div class = "dashboard"> <!-- This is where the dashboard will be displayed -->
         <section class = "navigation"> <!-- Navigation-->
             <img src = "{% static 'assets/img/logo_v2.svg'%}" alt = "home logo">
-            <nav> 
+            <nav>
                 <a href="index_dashboard">
                     <span class="material-symbols-outlined"> home </span>
                     <span class="text">  Principal </span>
@@ -30,12 +30,12 @@
                     <span class="material-symbols-outlined"> chart_data </span>
                     <span class="text">  Estadisticas </span>
                 </a>
-                <!--
-                <a href="help">
+
+                <!-- <a href="help">
                     <span class="material-symbols-outlined"> live_help </span>
                     <span class="text">  Ayuda </span>
-                </a>
-                -->
+                </a> -->
+
                 <a href="logout">
                     <span class="material-symbols-outlined"> logout </span>
                     <span class="text">  Logout </span>
@@ -44,7 +44,8 @@
         </section> <!-- Navigation End-->
         <section class = "main_stats">
             <div class="title"> <!-- Title-->
-                <h1> Estadisticas </h1>
+                <h1> Estadísticas </h1>
+                <p> En esta sección se muestran las estadísticas de los sensores. </p>
                 <form action = "#">
                     <label for="projects"> Mostrar datos del </label>
                     <select name="projects" id="projects">
@@ -53,8 +54,8 @@
                     </select>
                 </form>
             </div> <!-- Title End-->
-            <div class="charts"> 
-                <div class="chart_1"> 
+            <div class="charts">
+                <div class="chart_1">
                     <div>
                         <canvas id="Humedad_1"></canvas>
                     </div>
@@ -64,9 +65,9 @@
                     <div>
                         <canvas id="BAT_1"></canvas>
                     </div>
-                    
+
                 </div>
-                <div class="chart_2" style="display: none;"> 
+                <div class="chart_2" style="display: none;">
                     <div>
                         <canvas id="Humedad_2"></canvas>
                     </div>
@@ -90,13 +91,13 @@ var xLabels_1 = new Array(24);
 var xLabels_2 = new Array(24);
 
 var data_humedad_1 = [[75, 72, 63, 59, 50, 43],
-                      [62, 49, 45, 35, 27, 22], 
+                      [62, 49, 45, 35, 27, 22],
                       [52, 39, 35, 25, 19, 13]];
 
-var data_humedad_2 = [[30, 42, 73, 59, 40, 33], 
-                      [22, 39, 65, 45, 27, 22], 
+var data_humedad_2 = [[30, 42, 73, 59, 40, 33],
+                      [22, 39, 65, 45, 27, 22],
                       [12, 29, 55, 40, 19, 13]];
-                      
+
 var dataset_ec_1 = [22, 29, 13, 45, 62, 43];
 var dataset_ec_2 = [12, 19, 31, 25, 20, 39];
 
@@ -171,7 +172,7 @@ document.addEventListener("DOMContentLoaded", function() {
             ec1_chart.destroy();
             ec1_chart = ChartEC('EC_1', dataset_ec_1, xLabels_1);
             console.log("Updated dataset_ec_1 with sensor 1 ec levels:", dataset_ec_1);
-            
+
             dataset_ec_2 = newEcLevels2;
             ec2_chart.destroy();
             ec2_chart = ChartEC('EC_2', dataset_ec_2, xLabels_2);
@@ -199,11 +200,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 function ChartHumidity(canvasId, data, xLabels) {
+    const reversedXLabels = [...xLabels].reverse();
+    var labels = ['25%', '75%', '100%']; // Define the labels
     var datasets = data.map((dataset, index) => {
-        var colors = ['rgba(75,192,192,1)', 'rgba(255,99,132,1)', 'rgba(255,205,86,1)'];
-        return {
-            label: `Al ${25 * (index + 1)}% de profundidad`,
-            data: dataset,
+      var colors = ['rgba(75,192,192,1)', 'rgba(255,99,132,1)', 'rgba(255,205,86,1)'];
+      const reversedDataset = [...dataset].reverse();
+      return {
+            label: `Al ${labels[index]} de profundidad`,
+            data: reversedDataset,
             borderColor: colors[index % colors.length],
             borderWidth: 2,
             fill: false // Ensure the area under the line isn't filled
@@ -214,7 +218,7 @@ function ChartHumidity(canvasId, data, xLabels) {
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: xLabels,
+            labels: reversedXLabels,
             datasets: datasets
         },
         options: {
@@ -265,20 +269,23 @@ hum2_chart = ChartHumidity('Humedad_2', data_humedad_2, xLabels_2);
 
 
 function ChartEC(canvasId, dataset, xLabels) {
+    const reversedDataset = [...dataset].reverse();
+    const reversedXLabels = [...xLabels].reverse();
+
     const ctx = document.getElementById(canvasId);
     const data = {
         label: `EC del suelo`,
-        data: dataset,
+        data: reversedDataset,
         borderColor: 'rgba(255,205,86,1)',
         borderWidth: 2,
-        fill: true, 
+        fill: true,
         backgroundColor: 'rgba(255,205,86,0.2)'
     };
 
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: xLabels,
+            labels: reversedXLabels,
             datasets: [data]
         },
         options: {
@@ -329,10 +336,12 @@ ec1_chart = ChartEC('EC_1', dataset_ec_1, xLabels_1);
 ec2_chart = ChartEC('EC_2', dataset_ec_2, xLabels_2);
 
 function ChartBat(canvasId, dataset, xLabels) {
+    const reversedDataset = [...dataset].reverse();
+    const reversedXLabels = [...xLabels].reverse();
     const ctx = document.getElementById(canvasId);
     const data = {
         label: `Batería del sistema`,
-        data: dataset,
+        data: reversedDataset,
         borderColor: 'rgba(0, 168, 64)',
         borderWidth: 1,
         backgroundColor: 'rgba(0, 168, 64, 0.5)',
@@ -341,7 +350,7 @@ function ChartBat(canvasId, dataset, xLabels) {
     const chart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: xLabels,
+            labels: reversedXLabels,
             datasets: [data]
         },
         options: {
@@ -392,4 +401,3 @@ bat2_chart = ChartBat('BAT_2', dataset_bat_2, xLabels_2);
 </script>
 
 </html>
-

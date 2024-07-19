@@ -17,10 +17,10 @@ class SensorData_1(models.Model):
   humidity_75 = models.DecimalField(max_digits=15, decimal_places=2)
   electrical_conductivity = models.DecimalField(max_digits=15, decimal_places=2)
   timestamp = models.DateTimeField(auto_now_add=True)
-  
+
   class Meta:
     ordering = ['-timestamp']
-    
+
     def __str__(self):
       return (  f"Battery: {self.battery_level}%, "
                 f"Humidity25: {self.humidity_25}%, "
@@ -28,8 +28,8 @@ class SensorData_1(models.Model):
                 f"Humidity75: {self.humidity_75}%, "
                 f"Conductivity: {self.electrical_conductivity} mS/cm "
                 f"({self.timestamp:%B %d, %H:%M})")
-      
-############################################################################################################################      
+
+############################################################################################################################
 # Resumen sensor 2
 class SensorData_2(models.Model):
   battery_level = models.DecimalField(max_digits=15, decimal_places=2)
@@ -38,10 +38,10 @@ class SensorData_2(models.Model):
   humidity_75 = models.DecimalField(max_digits=15, decimal_places=2)
   electrical_conductivity = models.DecimalField(max_digits=15, decimal_places=2)
   timestamp = models.DateTimeField(auto_now_add=True)
-  
+
   class Meta:
     ordering = ['-timestamp']
-    
+
     def __str__(self):
       return (  f"Battery: {self.battery_level}%, "
                 f"Humidity25: {self.humidity_25}%, "
@@ -49,10 +49,15 @@ class SensorData_2(models.Model):
                 f"Humidity75: {self.humidity_75}%, "
                 f"Conductivity: {self.electrical_conductivity} mS/cm "
                 f"({self.timestamp:%B %d, %H:%M})")
-      
-      
+
+############################################################################################################################
 class OnOff(models.Model):
     State = models.BooleanField(default=False)
 
-    def __str__(self):
+    def str(self):
         return "On" if self.State else "Off"
+############################################################################################################################
+class RiegoSchedule(models.Model):
+    start_time = models.TimeField(default='10:00')
+    duration = models.IntegerField(default=5)
+    selected_date = models.DateField()

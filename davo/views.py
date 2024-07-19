@@ -2,56 +2,56 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User, auth
 from django.contrib import messages
 from .models import Feature
-from .models import SensorData_1, SensorData_2, OnOff
+from .models import SensorData_1, SensorData_2, OnOff, RiegoSchedule
 from django.utils import timezone
-from django.http import HttpResponse, JsonResponse
 import json
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
-from .serializers import SensorData1_serializer1, SensorData2_serializer1, OnOff_serializer
+from .serializers import SensorData1_serializer1, SensorData1_serializer2, SensorData2_serializer1, SensorData2_serializer2
 from .forms import OnOff_Form
+from datetime import datetime
 
 # Create your views here.
 
 def index(request):
-  
+
   feature1 = Feature()
   feature1.id = 0
   feature1.name = 'Monitoreo y Control Remoto en Tiempo Real'
   feature1.details= 'Proporcionamos un sistema integral que permite a los usuarios monitorear y controlar sus sistemas de riego en tiempo real desde cualquier dispositivo con acceso a internet. '
-  
-  
+
+
   feature2 = Feature()
   feature2.id = 1
   feature2.name = 'Datos y Gráficos Informativos'
   feature2.details= 'Ofrecemos herramientas avanzadas de análisis de datos y gráficos informativos que ayudan a los usuarios a entender mejor el rendimiento de su sistema de riego y la salud de sus cultivos.'
-  
-    
+
+
   feature3 = Feature()
   feature3.id = 2
   feature3.name = 'Seguridad y Protección de Datos'
   feature3.details= 'Garantizamos la seguridad y privacidad de los datos recopilados por nuestro sistema de monitoreo de riego IoT. Implementamos protocolos avanzados de encriptación y autenticación para proteger la información de nuestros usuarios contra accesos no autorizados y ciberamenazas.'
-  
-  
+
+
   features = [feature1, feature2, feature3]
-  
-  return render(request, 'index.html', {'features': features})  
-  
+
+  return render(request, 'index.html', {'features': features})
+
   """
   features = Feature.objects.all()
-  return render(request, 'index.html', {'features': features})  
+  return render(request, 'index.html', {'features': features})
   """
 
 def register(request):
-  
+
   if request.method == 'POST':
     username = request.POST['username']
     email = request.POST['email']
     password = request.POST['password']
     password2 = request.POST['password2']
-    
+
     if password == password2:
       if User.objects.filter(username=username).exists():
         messages.info(request, 'Username already used')
@@ -66,17 +66,17 @@ def register(request):
     else:
       messages.info(request, 'Password not the same')
       return redirect('register')
-    
-  else: 
+
+  else:
     return render(request, 'register.html')
-   
+
 def login(request):
   if request.method == 'POST':
     username = request.POST['username']
     password = request.POST['password']
-    
+
     user = auth.authenticate(username=username, password=password)
-    
+
     if user is not None:
       auth.login(request, user)
       return redirect('/')
@@ -84,15 +84,15 @@ def login(request):
       messages.info(request, 'Credentials invalid')
       return redirect('login')
   else:
-    return render(request, 'login.html')  
-  
+    return render(request, 'login.html')
+
 def logout(request):
-  auth.logout(request)  
+  auth.logout(request)
   return redirect('/')
 
 def counter(request):
   posts = [1, 2, 3, 4, 5, 'david', 'miranda', 'zarate']
-  return render(request, 'counter.html', {'posts':posts}) 
+  return render(request, 'counter.html', {'posts':posts})
 
 def post(request, pk):
   return render(request, 'post.html', {'pk':pk})
@@ -112,13 +112,13 @@ def index_dashboard(request):
         'form': form,
         'onoff_state': onoff_instance.State if onoff_instance else None
     })
-    
+
 def stats(request):
   return render(request, 'stats.html')
 
 def help(request):
   return render(request, 'help.html')
-    
+
 def command_serializer(request):
     if request.method == 'GET':
         data = {}
@@ -126,6 +126,8 @@ def command_serializer(request):
         for sensor_model, sensor_prefix in [(SensorData_1, '1'), (SensorData_2, '2')]:
             try:
                 latest_entry = sensor_model.objects.latest('timestamp')
+                latest_entry.timestamp = timezone.now()
+                latest_entry.save()
                 data.update({
                     f'battery_level_{sensor_prefix}': latest_entry.battery_level,
                     f'humidity_25_{sensor_prefix}': latest_entry.humidity_25,
@@ -142,7 +144,7 @@ def command_serializer(request):
 
         # Return the data as JSON
         return JsonResponse(data)
-    
+
 def get_last_entries(request):
     if request.method == 'GET':
         data = {}
@@ -150,8 +152,9 @@ def get_last_entries(request):
             entries = sensor_model.objects.order_by('-timestamp')[:24]
             entries_data = []
             for entry in entries:
+                local_timestamp = timezone.localtime(entry.timestamp)
                 entries_data.append({
-                    'timestamp': entry.timestamp.strftime('%m-%d %H:%M'),
+                    'timestamp': local_timestamp.strftime('%m-%d %H:%M'),
                     'battery_level': entry.battery_level,
                     'humidity_25': entry.humidity_25,
                     'humidity_50': entry.humidity_50,
@@ -165,6 +168,7 @@ def get_last_entries(request):
 
         return JsonResponse(data)
 
+
 @csrf_exempt
 def Agrosense_serializer_add_data_sensor1(request):
     if request.method == 'POST':  # Comunicación con ESP32
@@ -172,16 +176,16 @@ def Agrosense_serializer_add_data_sensor1(request):
         serializer = SensorData1_serializer1(data=data)
         if serializer.is_valid():
             sensor_data_instance = serializer.save()
-            sensor_data_instance.battery_level =  data['battery_level']
+            sensor_data_instance.battery_level = data['battery_level']
             sensor_data_instance.humidity_25 = data['humidity_25']
             sensor_data_instance.humidity_50 = data['humidity_50']
             sensor_data_instance.humidity_75 = data['humidity_75']
-            sensor_data_instance.electrical_conductivity = data['electrical_conductivity']*0.6776+206.65
+            sensor_data_instance.electrical_conductivity = data['electrical_conductivity']
             sensor_data_instance.save(update_fields=["battery_level", "humidity_25", "humidity_50", "humidity_75", "electrical_conductivity"])
             return HttpResponse(serializer.data, status=201)
 
-     
-@csrf_exempt 
+
+@csrf_exempt
 def Agrosense_serializer_add_data_sensor2(request):
     if request.method == 'POST':  # Comunicación con ESP32
         data = JSONParser().parse(request)
@@ -192,28 +196,59 @@ def Agrosense_serializer_add_data_sensor2(request):
             sensor_data_instance.humidity_25 = data['humidity_25']
             sensor_data_instance.humidity_50 = data['humidity_50']
             sensor_data_instance.humidity_75 = data['humidity_75']
-            sensor_data_instance.electrical_conductivity = data['electrical_conductivity']*0.6776+206.65
+            sensor_data_instance.electrical_conductivity = data['electrical_conductivity']
             sensor_data_instance.save(update_fields=["battery_level", "humidity_25", "humidity_50", "humidity_75", "electrical_conductivity"])
             return HttpResponse(serializer.data, status=201)
+
 
 @csrf_exempt
 def Send_State(request):
     # Get the first instance
     last_state = OnOff.objects.all().first()
-    
+
     # Prepare the response data
     response_data = {
         'state': bool(last_state.State) if last_state else None,
     }
-    
+
     # Get all instances
     all_states = OnOff.objects.all()
-    
+
     # Check if there are more than one instance
     if all_states.count() > 1:
         # Delete all objects except the first one
         OnOff.objects.exclude(pk=last_state.pk).delete()
-    
+
     return JsonResponse(data=response_data)
-    
-    
+
+@csrf_exempt  # Temporarily disable CSRF token for demonstration
+def save_date(request):
+    if request.method == 'POST':
+        # Retrieve variables from POST request
+        selected_date = request.POST.get('selectedDate')
+        start_time = request.POST.get('startTime')  # Assuming 'startTime' is the field name in the POST request
+        duration = request.POST.get('duration')  # Assuming 'duration' is the field name in the POST request
+
+        # Convert string date to Python date object
+        #selected_date_obj = datetime.strptime(selected_date, '%Y-%m-%d').date()
+
+        # Convert start_time string to Python time object if necessary
+        # Example format 'HH:MM'
+        datetime_obj = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
+
+        output_str = datetime_obj.strftime('%H:%M')
+
+        selected_date_obj = '2022-01-01'
+        #start_time_obj = '12:00'
+        # Convert duration to integer
+        duration_int = int(duration)
+
+        # Create a new RiegoSchedule object with the provided values
+        RiegoSchedule.objects.create(
+            selected_date=selected_date,
+            start_time=output_str,  # Use the converted time object
+            duration=duration_int  # Use the converted integer
+        )
+
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)
